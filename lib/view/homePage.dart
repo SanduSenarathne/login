@@ -12,9 +12,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        actions: <Widget>[
-          IconButton(onPressed: () {}, icon: Icon(Icons.close))
-        ],
         title: Text('Welcome'),
         backgroundColor: Colors.lightBlueAccent,
       ),
