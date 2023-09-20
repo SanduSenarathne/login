@@ -1,8 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:login_application/view/homePage.dart';
 import 'package:login_application/view/register.dart';
+
+import '../model/user_model.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -19,6 +23,8 @@ class _LoginPageState extends State<LoginPage> {
 
   // firebase
   final _auth = FirebaseAuth.instance;
+
+  final GoogleSignIn googleSignIn = GoogleSignIn();
 
   // string for displaying the error Message
   String? errorMessage;
@@ -98,7 +104,17 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
-
+    final googleLoginButton = Material(
+      child: MaterialButton(
+        onPressed: () {
+          _GooglesignIn();
+        },
+        child: Image.asset(
+          "assets/google.png",
+          width: 260,
+        ),
+      ),
+    );
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -142,6 +158,8 @@ class _LoginPageState extends State<LoginPage> {
                         )
                       ],
                     ),
+                    SizedBox(height: 20),
+                    googleLoginButton,
                   ],
                 ),
               ),
@@ -190,6 +208,54 @@ class _LoginPageState extends State<LoginPage> {
         Fluttertoast.showToast(msg: errorMessage!);
         print(error.code);
       }
+    }
+  }
+
+  Future<void> _GooglesignIn() async {
+    try {
+      final GoogleSignInAccount? googleSignInAccount =
+          await googleSignIn.signIn();
+      final GoogleSignInAuthentication googleSignInAuthentication =
+          await googleSignInAccount!.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleSignInAuthentication.accessToken,
+        idToken: googleSignInAuthentication.idToken,
+      );
+
+      final UserCredential authResult =
+          await _auth.signInWithCredential(credential);
+      final User? user = authResult.user;
+
+      if (user != null) {
+        // Successful Google sign-in
+
+        // Create a UserModel object
+        UserModel userModel = UserModel(
+          uid: user.uid,
+          email: user.email,
+          firstName: '', // You can set these values if needed
+          secondName: '', // You can set these values if needed
+        );
+
+        // Save user data to Firestore using the UserModel.toMap() method
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .set(userModel.toMap());
+
+        print('Google Sign-In Successful');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => HomePage(),
+          ),
+        );
+      } else {
+        // Handle sign-in failure
+        print('Google Sign-In Failed');
+      }
+    } catch (error) {
+      print(error);
     }
   }
 }
